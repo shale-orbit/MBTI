@@ -18,29 +18,100 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="MBTI 性格小测试：40 道情景题，测测你的四字母人格类型。">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="mbti_app">
+  <meta name="apple-mobile-web-app-title" content="MBTI 性格小测试">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>mbti_app</title>
+  <title>MBTI 性格小测试</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    #mbti-loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: #fef7ff;
+      color: #6750a4;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      z-index: 9999;
+    }
+    #mbti-loading .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #eaddff;
+      border-top-color: #6750a4;
+      border-radius: 50%;
+      animation: mbti-spin 1s linear infinite;
+    }
+    @keyframes mbti-spin {
+      to { transform: rotate(360deg); }
+    }
+    #mbti-loading .tip {
+      font-size: 14px;
+      color: #49454f;
+      max-width: 320px;
+      text-align: center;
+      line-height: 1.8;
+    }
+    #mbti-loading .error {
+      color: #b3261e;
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="mbti-loading">
+    <div class="spinner"></div>
+    <div class="tip">MBTI 性格小测试加载中…<br>首次打开需要下载约 10MB 资源，请稍候</div>
+    <div class="tip error" id="mbti-error">
+      加载超时或当前浏览器不支持 WebAssembly。<br>
+      请使用最新版 Chrome / Edge / Safari 打开，<br>
+      并确认浏览器处于「极速模式」而非「兼容模式」。
+    </div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <noscript>
+    <div style="text-align:center;margin-top:40px;font-family:sans-serif;">
+      当前浏览器禁用了 JavaScript，无法运行本应用。请开启 JavaScript 后刷新。
+    </div>
+  </noscript>
+
+  <script>
+    (function () {
+      // Flutter 引擎启动后会向 body 插入 flutter-view / flt-glass-pane 元素
+      var removed = false;
+      function hideLoading() {
+        if (removed) return;
+        var el = document.getElementById('mbti-loading');
+        if (el && document.querySelector('flutter-view, flt-glass-pane')) {
+          el.remove();
+          removed = true;
+        }
+      }
+      var timer = setInterval(hideLoading, 300);
+      // 60 秒仍未启动则提示换浏览器
+      setTimeout(function () {
+        clearInterval(timer);
+        if (!removed) {
+          var err = document.getElementById('mbti-error');
+          if (err) err.style.display = 'block';
+        }
+      }, 60000);
+    })();
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

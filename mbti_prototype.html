@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1, maximum-scale=1">
+  <title>MBTI 性格小测试 · 页面骨架 v1</title>
+  <style>
+    /* ============================================================
+       骨架版约定
+       - 画布固定 375 × 812，禁用任何响应式缩放
+       - 仅表达 Flutter 组件结构与 Material 3 默认尺寸
+       - 不含 M3 配色、阴影、主题样式，统一使用线框灰
+       ============================================================ */
+    :root{
+      --ink:#1c1b1f;          /* onSurface */
+      --muted:#6f6b73;        /* 辅助文字 */
+      --line:#d5d2d8;         /* 线框 */
+      --line-strong:#a9a5ad;  /* 线框加深 */
+      --fill:#f4f2f6;         /* 占位填充 */
+      --tag:#7c7783;          /* 组件标签 */
+      --tag-bg:#f1eff3;
+      --stage:#e9e7ec;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ margin:0; padding:0; }
+    body{
+      background:var(--stage);
+      color:var(--ink);
+      font-family:Roboto,"Noto Sans SC","PingFang SC","Microsoft YaHei",-apple-system,sans-serif;
+      font-size:14px;
+      line-height:20px;
+      -webkit-text-size-adjust:100%;
+    }
+    button{ font:inherit; color:inherit; cursor:pointer; }
+    button:focus-visible{ outline:2px solid var(--line-strong); outline-offset:2px; }
+
+    /* 预览容器（不属于 App 画布） */
+    .stage{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px 24px;
+    }
+
+    /* 375 × 812 固定画布 */
+    .device{
+      position:relative;
+      flex:none;
+      width:375px;
+      height:812px;
+      background:#fff;
+      border:1px solid #b9b6be;
+      overflow:hidden;
+    }
+    .safe-top{
+      height:24px;
+      display:flex;
+      align-items:center;
+      padding:0 16px;
+      background:#fff;
+    }
+    .menu-btn{
+      width:32px;
+      height:24px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      justify-content:center;
+      gap:3px;
+      padding:0;
+      border:0;
+      background:transparent;
+    }
+    .menu-btn span{
+      display:block;
+      width:18px;
+      height:2px;
+      border-radius:1px;
+      background:var(--ink);
+    }
+
+    /* 页面菜单抽屉 */
+    .scrim{
+      position:absolute;
+      inset:0;
+      z-index:20;
+      display:none;
+      background:rgba(28,27,31,.32);
+    }
+    .scrim.is-open{ display:block; }
+    .drawer{
+      position:absolute;
+      top:0; bottom:0; left:0;
+      z-index:21;
+      width:240px;
+      display:none;
+      flex-direction:column;
+      gap:4px;
+      padding:24px 0;
+      border-right:1px solid var(--line);
+      background:#fff;
+    }
+    .drawer.is-open{ display:flex; }
+    .drawer-item{
+      height:56px;
+      padding:0 24px;
+      border:0;
+      background:transparent;
+      color:var(--ink);
+      font-size:16px;
+      line-height:24px;
+      text-align:left;
+    }
+    .drawer-item.is-active{
+      background:var(--fill);
+      font-weight:600;
+    }
+
+    /* 页面容器：AppBar 56 + 内容区，页面之间互斥显示 */
+    .page{
+      position:absolute;
+      top:24px; left:0; right:0;
+      bottom:0;
+      display:none;
+      flex-direction:column;
+      background:#fff;
+    }
+    .page.is-active{ display:flex; }
+
+    /* ---------- AppBar（M3 默认 56） ---------- */
+    .appbar{
+      flex:none;
+      height:56px;
+      display:flex;
+      align-items:center;
+      padding-right:16px;
+      border-bottom:1px solid var(--line);
+      background:#fff;
+    }
+    .appbar-leading{
+      flex:none;
+      width:48px;
+      height:48px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border:0;
+      background:transparent;
+      color:var(--ink);
+      font-size:20px;
+      line-height:1;
+    }
+    .appbar-leading:first-child{ margin-left:4px; }
+    .appbar-title{
+      margin-left:16px;
+      font-size:22px;
+      line-height:28px;
+      font-weight:400;
+      letter-spacing:0;
+      white-space:nowrap;
+    }
+    .appbar-title.with-leading{ margin-left:0; }
+    .appbar-spacer{ flex:1; }
+    .appbar-action{
+      width:40px; height:40px;
+      display:flex; align-items:center; justify-content:center;
+      border:0; background:transparent;
+      color:var(--muted);
+      font-size:16px;
+    }
+
+    /* ---------- 可滚动内容区 ---------- */
+    .body{
+      flex:1;
+      min-height:0;
+      overflow-y:auto;
+      overflow-x:hidden;
+      padding:16px;
+      background:#fff;
+    }
+    .body::-webkit-scrollbar{ width:2px; }
+    .body::-webkit-scrollbar-thumb{ background:#dcd9e0; }
+
+    /* 骨架组件标签 */
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      margin-bottom:10px;
+      padding:2px 6px;
+      border:1px dashed #c3bfc9;
+      border-radius:4px;
+      background:var(--tag-bg);
+      color:var(--tag);
+      font-family:ui-monospace,Consolas,"Courier New",monospace;
+      font-size:9px;
+      line-height:12px;
+      letter-spacing:.3px;
+    }
+
+    /* Card：M3 radius 12，内部 padding 16 */
+    .card{
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      padding:16px;
+    }
+    .card + .card,
+    .card + .section,
+    .section + .card{ margin-top:16px; }
+
+    /* 分区标题 */
+    .section{ margin-top:24px; }
+    .section-title{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      margin:0 0 8px;
+      font-size:16px;
+      line-height:24px;
+      font-weight:500;
+    }
+    .section-title span{
+      color:var(--muted);
+      font-size:11px;
+      line-height:16px;
+      font-weight:400;
+    }
+
+    /* 首页主卡片文案 */
+    .hero-title{
+      margin:0 0 6px;
+      font-size:22px;
+      line-height:28px;
+      font-weight:500;
+    }
+    .hero-desc{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:20px;
+    }
+    .meta{
+      display:flex;
+      gap:8px;
+      margin-top:12px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:16px;
+    }
+    .meta em{
+      padding:2px 8px;
+      border:1px dashed #c3bfc9;
+      border-radius:4px;
+      font-style:normal;
+    }
+
+    /* 按钮：M3 FilledButton / OutlinedButton 默认高 40，胶囊形 */
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      height:40px;
+      padding:0 24px;
+      border:1px solid var(--line-strong);
+      border-radius:20px;
+      background:#fff;
+      color:var(--ink);
+      font-size:14px;
+      line-height:20px;
+      font-weight:500;
+      white-space:nowrap;
+    }
+    .btn.filled{
+      width:100%;
+      background:var(--fill);
+      border-color:var(--line-strong);
+    }
+    .btn.outlined{ background:#fff; }
+    .btn:disabled{ opacity:.45; cursor:default; }
+    .btn .arrow{ font-size:16px; line-height:1; }
+    .btn-row{
+      display:flex;
+      gap:12px;
+      margin-top:16px;
+    }
+    .btn-row .btn{ flex:1; padding:0 16px; }
+
+    /* ListTile：默认高 56 */
+    .tile{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      min-height:56px;
+      padding:12px 16px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      text-align:left;
+      width:100%;
+    }
+    .tile-icon{
+      flex:none;
+      width:48px; height:48px;
+      display:block;
+      overflow:hidden;
+      border-radius:50%;
+      background:var(--fill);
+    }
+    .tile-icon svg{ width:100%; height:100%; display:block; }
+    .tile-text{ min-width:0; flex:1; }
+    .tile-title{
+      display:block;
+      font-size:16px;
+      line-height:24px;
+      font-weight:400;
+    }
+    .tile-sub{
+      display:block;
+      margin-top:2px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:20px;
+    }
+    .chevron{ color:var(--muted); font-size:18px; line-height:1; }
+
+    /* 说明文字 */
+    .note{
+      margin-top:16px;
+      padding:12px;
+      border:1px dashed var(--line);
+      border-radius:8px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:18px;
+    }
+    .note b{ color:var(--ink); font-weight:500; }
+
+    /* ---------- 详情页 ---------- */
+    .progress-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size:12px;
+      line-height:16px;
+      color:var(--muted);
+    }
+    .progress-head strong{
+      color:var(--ink);
+      font-size:14px;
+      line-height:20px;
+      font-weight:500;
+    }
+    .progress-track{
+      position:relative;
+      height:4px;
+      margin:10px 0 24px;
+      border:1px solid var(--line);
+      border-radius:2px;
+      background:var(--fill);
+      overflow:hidden;
+    }
+    .progress-track i{
+      position:absolute;
+      inset:0 auto 0 0;
+      width:10%;
+      background:#c9c5ce;
+    }
+    .question{
+      padding:16px;
+    }
+    .question-index{
+      margin-bottom:8px;
+      color:var(--muted);
+      font-size:11px;
+      line-height:16px;
+      letter-spacing:.5px;
+    }
+    .question-text{
+      margin:0;
+      font-size:22px;
+      line-height:28px;
+      font-weight:500;
+    }
+    .option{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      width:100%;
+      min-height:56px;
+      margin-top:12px;
+      padding:16px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      text-align:left;
+    }
+    .option-key{
+      flex:none;
+      width:20px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:20px;
+      font-weight:600;
+    }
+    .option-text{
+      font-size:16px;
+      line-height:24px;
+    }
+    .option.is-selected{
+      border:2px solid var(--ink);
+      padding:15px;
+    }
+    .option.is-selected .option-key{ color:var(--ink); }
+    .hint{
+      margin-top:12px;
+      color:var(--muted);
+      font-size:11px;
+      line-height:16px;
+    }
+
+    /* 底部固定操作区 */
+    .bottom-bar{
+      flex:none;
+      display:flex;
+      gap:12px;
+      padding:16px;
+      border-top:1px solid var(--line);
+      background:#fff;
+    }
+    .bottom-bar .btn{ flex:1; width:auto; padding:0 16px; }
+    .bottom-bar .caption{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:11px;
+      line-height:16px;
+      text-align:center;
+    }
+
+    /* ---------- 个人中心 ---------- */
+    .profile-head{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      padding:4px 0 8px;
+    }
+    .avatar{
+      flex:none;
+      width:56px; height:56px;
+      display:block;
+      overflow:hidden;
+      border-radius:50%;
+      background:var(--fill);
+    }
+    .avatar svg{ width:100%; height:100%; display:block; }
+    .profile-name{
+      font-size:22px;
+      line-height:28px;
+      font-weight:500;
+    }
+    .profile-sub{
+      margin-top:2px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:20px;
+    }
+    .type-head{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-top:4px;
+    }
+    .type-badge{
+      flex:none;
+      min-width:88px;
+      height:48px;
+      display:flex; align-items:center; justify-content:center;
+      border:1px dashed var(--line-strong);
+      border-radius:8px;
+      background:var(--fill);
+      font-family:ui-monospace,Consolas,"Courier New",monospace;
+      font-size:20px;
+      line-height:24px;
+      letter-spacing:2px;
+      color:var(--muted);
+    }
+    .type-name{
+      font-size:16px;
+      line-height:24px;
+      font-weight:500;
+    }
+    .type-name small{
+      display:block;
+      margin-top:2px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:16px;
+      font-weight:400;
+    }
+    .desc{
+      margin:12px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:21px;
+    }
+    .divider{
+      height:1px;
+      margin:16px 0;
+      background:var(--line);
+    }
+    .dim-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      height:40px;
+      font-size:14px;
+      line-height:20px;
+    }
+    .dim-row .left,
+    .dim-row .right{ color:var(--muted); }
+    .dim-row .bar{
+      flex:1;
+      height:4px;
+      border:1px solid var(--line);
+      border-radius:2px;
+      background:var(--fill);
+    }
+    .dim-row .bar i{
+      display:block;
+      width:50%;
+      height:100%;
+      background:#c9c5ce;
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="device">
+
+    <div class="safe-top">
+      <button type="button" class="menu-btn" id="menuBtn" aria-label="打开页面菜单" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <!-- ============================================================
+         页面 1：首页 / 列表页
+         Flutter: Scaffold > AppBar + ListView
+         ============================================================ -->
+    <div class="page is-active" id="page-home" data-page="home">
+      <div class="appbar">
+        <!-- Flutter: AppBar(title: Text('MBTI 性格小测试')) -->
+        <div class="appbar-title" style="margin-left:16px;">MBTI 性格小测试</div>
+        <div class="appbar-spacer"></div>
+        <div class="appbar-action" aria-hidden="true">⋯</div>
+      </div>
+
+      <div class="body">
+        <!-- Flutter: ListView(padding: EdgeInsets.all(16)) -->
+        <div class="card">
+          <h1 class="hero-title">测一测你的 MBTI</h1>
+          <p class="hero-desc">共 40 道情景题，4 个维度各 10 题，按选项计分并生成四字母人格类型。结果仅供课程原型演示与自我了解参考，不构成专业心理评估或诊断；测试不接入后端，也不收集个人数据。没有标准答案，按第一反应选更接近你的一项，完成后可保存最近一次结果。放轻松，玩得愉快！</p>
+          <div class="meta">
+            <em>40 道题</em>
+            <em>约 15 分钟</em>
+            <em>4 个维度</em>
+          </div>
+          <button type="button" class="btn filled" style="margin-top:16px;" data-action="start">
+            开始测试 <span class="arrow">→</span>
+          </button>
+        </div>
+
+        <div class="section">
+          <div class="section-title">最近记录</div>
+          <button type="button" class="tile" data-action="open-record">
+            <span class="tile-icon" role="img" aria-label="MBTI 人格画像拼图">
+              <svg viewBox="0 0 30 30" aria-hidden="true">
+                <g transform="translate(0 0)"><rect width="10" height="10" fill="#efeaf5"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#d8d2e4"/><circle cx="5" cy="3.7" r="2.6" fill="#403847"/><circle cx="5" cy="4.5" r="2.2" fill="#f2d8c2"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#403847"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(10 0)"><rect width="10" height="10" fill="#e8f0ea"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#c9d7c7"/><circle cx="5" cy="3.7" r="2.6" fill="#2f2b33"/><circle cx="5" cy="4.5" r="2.2" fill="#e8c3a5"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#2f2b33"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(20 0)"><rect width="10" height="10" fill="#fdeee8"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#f0c9c2"/><circle cx="5" cy="3.7" r="2.6" fill="#6b4a36"/><circle cx="5" cy="4.5" r="2.2" fill="#d9a77f"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#6b4a36"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(30 0)"><rect width="10" height="10" fill="#e8eef7"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#c9d4e6"/><circle cx="5" cy="3.7" r="2.6" fill="#2e4a5e"/><circle cx="5" cy="4.5" r="2.2" fill="#b97f5e"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#2e4a5e"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(0 10)"><rect width="10" height="10" fill="#f6efe2"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#e6d2b8"/><circle cx="5" cy="3.7" r="2.6" fill="#a06b45"/><circle cx="5" cy="4.5" r="2.2" fill="#f2d8c2"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#a06b45"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(10 10)"><rect width="10" height="10" fill="#f1e8f4"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#d4c6e0"/><circle cx="5" cy="3.7" r="2.6" fill="#5b3a5e"/><circle cx="5" cy="4.5" r="2.2" fill="#e8c3a5"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#5b3a5e"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(20 10)"><rect width="10" height="10" fill="#e7f2f2"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#c9dede"/><circle cx="5" cy="3.7" r="2.6" fill="#7d7a86"/><circle cx="5" cy="4.5" r="2.2" fill="#d9a77f"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#7d7a86"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(30 10)"><rect width="10" height="10" fill="#f9ecec"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#e8c4c4"/><circle cx="5" cy="3.7" r="2.6" fill="#403847"/><circle cx="5" cy="4.5" r="2.2" fill="#8d5a3b"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#403847"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(0 20)"><rect width="10" height="10" fill="#eef0e3"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#d9dcc2"/><circle cx="5" cy="3.7" r="2.6" fill="#c9a36a"/><circle cx="5" cy="4.5" r="2.2" fill="#f2d8c2"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#c9a36a"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(10 20)"><rect width="10" height="10" fill="#ece9f7"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#cfc8ea"/><circle cx="5" cy="3.7" r="2.6" fill="#2f2b33"/><circle cx="5" cy="4.5" r="2.2" fill="#b97f5e"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#2f2b33"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(20 20)"><rect width="10" height="10" fill="#f7efe9"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#e6cdbd"/><circle cx="5" cy="3.7" r="2.6" fill="#6b4a36"/><circle cx="5" cy="4.5" r="2.2" fill="#e8c3a5"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#6b4a36"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(30 20)"><rect width="10" height="10" fill="#e9f0f6"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#c7d8e6"/><circle cx="5" cy="3.7" r="2.6" fill="#403847"/><circle cx="5" cy="4.5" r="2.2" fill="#d9a77f"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#403847"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(0 30)"><rect width="10" height="10" fill="#f2ecf2"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#dbc9db"/><circle cx="5" cy="3.7" r="2.6" fill="#a06b45"/><circle cx="5" cy="4.5" r="2.2" fill="#8d5a3b"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#a06b45"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(10 30)"><rect width="10" height="10" fill="#eaf3ea"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#c7dfc7"/><circle cx="5" cy="3.7" r="2.6" fill="#2e4a5e"/><circle cx="5" cy="4.5" r="2.2" fill="#f2d8c2"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#2e4a5e"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(20 30)"><rect width="10" height="10" fill="#fbf0e6"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#edd5bf"/><circle cx="5" cy="3.7" r="2.6" fill="#5b3a5e"/><circle cx="5" cy="4.5" r="2.2" fill="#b97f5e"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#5b3a5e"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+                <g transform="translate(30 30)"><rect width="10" height="10" fill="#edecf2"/><path d="M1.1 10c.4-2.2 1.8-3.2 3.9-3.2s3.5 1 3.9 3.2z" fill="#d1cfe0"/><circle cx="5" cy="3.7" r="2.6" fill="#7d7a86"/><circle cx="5" cy="4.5" r="2.2" fill="#e8c3a5"/><path d="M2.9 3.4c.4-1.2 1.2-1.9 2.1-1.9s1.7.7 2.1 1.9c-.6-.4-1.2-.6-2.1-.6s-1.5.2-2.1.6z" fill="#7d7a86"/><circle cx="4.1" cy="4.6" r=".35" fill="#2f2b33"/><circle cx="5.9" cy="4.6" r=".35" fill="#2f2b33"/><path d="M4.4 5.5c.3.35.9.35 1.2 0" fill="none" stroke="#b47b6a" stroke-width=".25" stroke-linecap="round"/></g>
+              </svg>
+            </span>
+            <span class="tile-text">
+              <span class="tile-title">人格说明</span>
+              <span class="tile-sub" id="recentSub">完成 40 道题后可在这里查看结果</span>
+            </span>
+            <span class="chevron">›</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================================
+         页面 2：详情页 / 答题页
+         Flutter: Scaffold > AppBar + ListView + 底部固定操作区
+         ============================================================ -->
+    <div class="page" id="page-detail" data-page="detail">
+      <div class="appbar">
+        <!-- Flutter: AppBar(leading: IconButton(back), title: Text('问题')) -->
+        <button type="button" class="appbar-leading" aria-label="返回首页" data-go="home">←</button>
+        <span class="appbar-title">问题</span>
+      </div>
+
+      <div class="body">
+        <div class="progress-head">
+          <strong id="progressText">第 1 / 40 题</strong>
+          <span>40 题 · 4 个维度</span>
+        </div>
+        <div class="progress-track" aria-hidden="true"><i id="progressFill" style="width:2.5%;"></i></div>
+
+        <div class="card question">
+          <div class="question-index" id="questionIndex">QUESTION 01</div>
+          <p class="question-text" id="questionText">周末结束，你更想怎么恢复精力？</p>
+        </div>
+
+        <!-- Flutter: Column 中的两个可选列表项 -->
+        <button type="button" class="option" id="optionA" data-choice="0" aria-pressed="false">
+          <span class="option-key">A.</span>
+          <span class="option-text" id="optionAText">约朋友出门吃饭聊天</span>
+        </button>
+        <button type="button" class="option" id="optionB" data-choice="1" aria-pressed="false">
+          <span class="option-key">B.</span>
+          <span class="option-text" id="optionBText">在家独处看书或追剧</span>
+        </button>
+
+        <div class="hint">单选：每题必须选择 A 或 B，选中后才能进入下一题；也可以随时返回上一题查看或修改答案。</div>
+      </div>
+
+      <div class="bottom-bar">
+        <!-- Flutter: Row > Expanded(OutlinedButton) + SizedBox(width: 12) + Expanded(FilledButton) -->
+        <button type="button" class="btn outlined" id="prevBtn" data-action="prev" disabled>
+          <span class="arrow">←</span> 上一题
+        </button>
+        <button type="button" class="btn filled" id="nextBtn" data-action="next" disabled>
+          <span id="nextLabel">下一题</span> <span class="arrow">→</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         页面 3：个人中心页（人格说明）
+         Flutter: Scaffold > AppBar + ListView
+         ============================================================ -->
+    <div class="page" id="page-profile" data-page="profile">
+      <div class="appbar">
+        <button type="button" class="appbar-leading" aria-label="返回首页" data-go="home">←</button>
+        <span class="appbar-title">个人中心</span>
+      </div>
+
+      <div class="body">
+        <!-- Flutter: Row 用户信息区 -->
+        <div class="profile-head">
+          <div class="avatar" role="img" aria-label="中性卡通头像">
+            <svg viewBox="0 0 56 56" aria-hidden="true">
+              <circle cx="28" cy="28" r="28" fill="#efeaf5"></circle>
+              <path d="M5 56c1.5-9.5 9.5-15 23-15s21.5 5.5 23 15z" fill="#d8d2e4"></path>
+              <rect x="23" y="33" width="10" height="10" rx="4" fill="#e9cdb4"></rect>
+              <ellipse cx="28" cy="25.5" rx="11.5" ry="13.5" fill="#f2d8c2"></ellipse>
+              <circle cx="16.8" cy="26.5" r="2.2" fill="#e9cdb4"></circle>
+              <circle cx="39.2" cy="26.5" r="2.2" fill="#e9cdb4"></circle>
+              <path d="M16 24.5c0-8 5-12.5 12-12.5s12 4.5 12 12.5c0 1.8-.2 3.4-.7 4.8-1.4-3.6-3.2-5.8-5.6-6.8-2-.8-4-1.2-5.7-1.2s-3.7.4-5.7 1.2c-2.4 1-4.2 3.2-5.6 6.8-.5-1.4-.7-3-.7-4.8z" fill="#403847"></path>
+              <circle cx="23.5" cy="27" r="1.2" fill="#3b3440"></circle>
+              <circle cx="32.5" cy="27" r="1.2" fill="#3b3440"></circle>
+              <path d="M25.5 31.2c1.6 1.4 3.4 1.4 5 0" fill="none" stroke="#b47b6a" stroke-width="1.2" stroke-linecap="round"></path>
+              <circle cx="20.7" cy="30.3" r="1.4" fill="#e8b3a5" opacity=".55"></circle>
+              <circle cx="35.3" cy="30.3" r="1.4" fill="#e8b3a5" opacity=".55"></circle>
+            </svg>
+          </div>
+          <div>
+            <div class="profile-name">M 同学</div>
+            <div class="profile-sub">Flutter 学习者 · 原型体验中</div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:16px;">
+          <div class="section-title">人格说明</div>
+          <div class="card">
+            <div class="type-head">
+              <div class="type-badge" id="typeBadge">----</div>
+              <div class="type-name">
+                <span id="typeName">尚未生成结果</span>
+                <small id="typeTagline">完成 40 道题后显示四字母类型与中文名称</small>
+              </div>
+            </div>
+            <p class="desc" id="resultDesc">完成 40 道题后，这里会显示类型概述、优势与需要注意的倾向。当前还没有答题记录。</p>
+
+            <div class="divider"></div>
+
+            <div class="dim-row"><span class="left">E 外向</span><span class="bar"><i data-bar="EI" style="width:50%;"></i></span><span class="right">I 内向</span></div>
+            <div class="dim-row"><span class="left">S 实感</span><span class="bar"><i data-bar="SN" style="width:50%;"></i></span><span class="right">N 直觉</span></div>
+            <div class="dim-row"><span class="left">T 思考</span><span class="bar"><i data-bar="TF" style="width:50%;"></i></span><span class="right">F 情感</span></div>
+            <div class="dim-row"><span class="left">J 判断</span><span class="bar"><i data-bar="JP" style="width:50%;"></i></span><span class="right">P 感知</span></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">操作</div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" class="btn outlined" data-action="start">重新测试</button>
+            <button type="button" class="btn" id="saveBtn" data-action="save" disabled>保存</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="scrim" id="scrim" aria-hidden="true"></div>
+    <aside class="drawer" id="drawer" aria-hidden="true">
+      <button type="button" class="drawer-item is-active" data-preview="home">首页列表</button>
+      <button type="button" class="drawer-item" data-preview="detail">详情答题</button>
+      <button type="button" class="drawer-item" data-preview="profile">个人中心</button>
+    </aside>
+  </div>
+</div>
+
+<script>
+  (function () {
+    /* ---------- 40 道题库：4 个维度各 10 题，选项交替对应两极 ---------- */
+    var QUESTION_BANK = [
+      { dim: 'EI', text: '周末结束，你更想怎么恢复精力？', options: [
+        { text: '约朋友出门吃饭聊天', pole: 'E' },
+        { text: '在家独处看书或追剧', pole: 'I' }
+      ] },
+      { dim: 'EI', text: '进入一个新班级或新团队，你通常先：', options: [
+        { text: '先观察气氛，等别人来交流', pole: 'I' },
+        { text: '主动打招呼，先认识几个人', pole: 'E' }
+      ] },
+      { dim: 'EI', text: '讨论课上老师抛出问题时，你更倾向于：', options: [
+        { text: '边想边说，在交流中理清思路', pole: 'E' },
+        { text: '想清楚再举手，或课后单独表达', pole: 'I' }
+      ] },
+      { dim: 'EI', text: '连续社交一整天后，你通常会：', options: [
+        { text: '消耗很大，需要独处充电', pole: 'I' },
+        { text: '越聊越有精神，还想继续', pole: 'E' }
+      ] },
+      { dim: 'EI', text: '遇到烦心事时，你更常：', options: [
+        { text: '找朋友倾诉，说出来会轻松', pole: 'E' },
+        { text: '自己消化，想明白后再谈', pole: 'I' }
+      ] },
+      { dim: 'EI', text: '小组作业分工时，你更愿意承担：', options: [
+        { text: '整理资料、独立完成自己那部分', pole: 'I' },
+        { text: '联络组员、推动大家讨论', pole: 'E' }
+      ] },
+      { dim: 'EI', text: '课间休息时，你通常会：', options: [
+        { text: '和同学聊天、走动一下', pole: 'E' },
+        { text: '待在座位上做自己的事', pole: 'I' }
+      ] },
+      { dim: 'EI', text: '需要上台做展示时，你更接近：', options: [
+        { text: '提前准备充分，但上台前会紧张', pole: 'I' },
+        { text: '比较享受现场互动，越讲越放松', pole: 'E' }
+      ] },
+      { dim: 'EI', text: '你更理想的学习环境是：', options: [
+        { text: '有人一起讨论，氛围热闹', pole: 'E' },
+        { text: '安静独立，不被打扰', pole: 'I' }
+      ] },
+      { dim: 'EI', text: '认识新朋友后，你通常：', options: [
+        { text: '保持少量但深入的联系', pole: 'I' },
+        { text: '很快融入对方的圈子', pole: 'E' }
+      ] },
+
+      { dim: 'SN', text: '学习一个新软件时，你更习惯：', options: [
+        { text: '跟着教程一步步操作，先掌握具体功能', pole: 'S' },
+        { text: '先看整体框架，猜它可能怎么设计', pole: 'N' }
+      ] },
+      { dim: 'SN', text: '听别人讲一件事，你更容易注意到：', options: [
+        { text: '背后的含义、可能的发展', pole: 'N' },
+        { text: '具体的细节、时间和数字', pole: 'S' }
+      ] },
+      { dim: 'SN', text: '做小组项目时，你更擅长：', options: [
+        { text: '把任务拆成可执行的步骤并落实', pole: 'S' },
+        { text: '提出新点子和整体方向', pole: 'N' }
+      ] },
+      { dim: 'SN', text: '你更喜欢阅读哪类内容？', options: [
+        { text: '真实案例、操作指南', pole: 'S' },
+        { text: '观点推演、未来趋势', pole: 'N' }
+      ] },
+      { dim: 'SN', text: '面对一张复杂的地图或说明书，你会：', options: [
+        { text: '先想象整体场景和可能性', pole: 'N' },
+        { text: '按标注逐项确认', pole: 'S' }
+      ] },
+      { dim: 'SN', text: '老师讲一个抽象概念时，你更容易理解的方式是：', options: [
+        { text: '先听整体比喻和框架', pole: 'N' },
+        { text: '看具体例子和操作步骤', pole: 'S' }
+      ] },
+      { dim: 'SN', text: '你更相信哪种判断？', options: [
+        { text: '亲身经历和可验证的事实', pole: 'S' },
+        { text: '直觉和对趋势的预感', pole: 'N' }
+      ] },
+      { dim: 'SN', text: '写课程论文时，你更关注：', options: [
+        { text: '观点是否有新意、有洞见', pole: 'N' },
+        { text: '资料是否详实、论证是否扎实', pole: 'S' }
+      ] },
+      { dim: 'SN', text: '别人描述一个陌生地方时，你脑中首先出现：', options: [
+        { text: '具体路线和标志物', pole: 'S' },
+        { text: '那个地方的整体感觉和画面', pole: 'N' }
+      ] },
+      { dim: 'SN', text: '你更喜欢的课堂是：', options: [
+        { text: '讨论开放问题、鼓励联想', pole: 'N' },
+        { text: '讲解清晰、知识点明确', pole: 'S' }
+      ] },
+
+      { dim: 'TF', text: '朋友向你抱怨时，你的第一反应是：', options: [
+        { text: '先安慰情绪，让他感觉被理解', pole: 'F' },
+        { text: '帮他分析问题、给出解决办法', pole: 'T' }
+      ] },
+      { dim: 'TF', text: '小组出现分歧时，你更看重：', options: [
+        { text: '哪种方案逻辑更合理、效率更高', pole: 'T' },
+        { text: '大家是否都能接受、关系是否和谐', pole: 'F' }
+      ] },
+      { dim: 'TF', text: '评价一个作品时，你更先关注：', options: [
+        { text: '表达、氛围、是否打动人', pole: 'F' },
+        { text: '结构、功能、是否达标', pole: 'T' }
+      ] },
+      { dim: 'TF', text: '做决定时，你更依赖：', options: [
+        { text: '客观事实和数据', pole: 'T' },
+        { text: '自己的感受和他人的影响', pole: 'F' }
+      ] },
+      { dim: 'TF', text: '别人指出你的错误时，你更在意：', options: [
+        { text: '他说得对不对、有没有依据', pole: 'T' },
+        { text: '他的语气是否尊重、是否顾及你', pole: 'F' }
+      ] },
+      { dim: 'TF', text: '团队里有人情绪低落、影响进度时，你会先：', options: [
+        { text: '了解具体问题，推动任务回到正轨', pole: 'T' },
+        { text: '关心他的状态，先安抚再谈任务', pole: 'F' }
+      ] },
+      { dim: 'TF', text: '你更希望别人怎么评价你？', options: [
+        { text: '温暖、善解人意', pole: 'F' },
+        { text: '理性、靠谱、有判断力', pole: 'T' }
+      ] },
+      { dim: 'TF', text: '制定规则时，你更倾向：', options: [
+        { text: '考虑个体差异和特殊情况', pole: 'F' },
+        { text: '统一标准，按规则执行', pole: 'T' }
+      ] },
+      { dim: 'TF', text: '看完一部电影后，你更容易记住：', options: [
+        { text: '人物的情感和关系', pole: 'F' },
+        { text: '情节逻辑和设定是否合理', pole: 'T' }
+      ] },
+      { dim: 'TF', text: '朋友做了一个你觉得不明智的决定，你会：', options: [
+        { text: '直接指出风险，给出现实建议', pole: 'T' },
+        { text: '先理解他的选择，再温和表达担心', pole: 'F' }
+      ] },
+
+      { dim: 'JP', text: '面对两周后截止的作业，你通常：', options: [
+        { text: '先定计划，按节点推进', pole: 'J' },
+        { text: '先放着，临近截止再集中完成', pole: 'P' }
+      ] },
+      { dim: 'JP', text: '出门旅行前，你更倾向：', options: [
+        { text: '大概定个方向，到了再看', pole: 'P' },
+        { text: '提前订好行程和住宿', pole: 'J' }
+      ] },
+      { dim: 'JP', text: '你的桌面和文件管理通常是：', options: [
+        { text: '分类清楚，固定位置', pole: 'J' },
+        { text: '随手放，需要时再找', pole: 'P' }
+      ] },
+      { dim: 'JP', text: '计划临时被打乱时，你更常：', options: [
+        { text: '觉得没关系，顺势调整', pole: 'P' },
+        { text: '会不太舒服，想尽快恢复秩序', pole: 'J' }
+      ] },
+      { dim: 'JP', text: '你更喜欢的工作方式是：', options: [
+        { text: '目标明确、按流程完成', pole: 'J' },
+        { text: '保留弹性、随时尝试新做法', pole: 'P' }
+      ] },
+      { dim: 'JP', text: '对于每天的待办事项，你通常：', options: [
+        { text: '心里有数，但不一定写下来', pole: 'P' },
+        { text: '列清单并逐项勾掉', pole: 'J' }
+      ] },
+      { dim: 'JP', text: '临时多出一个空闲下午，你会：', options: [
+        { text: '安排一件具体的事，让时间不浪费', pole: 'J' },
+        { text: '看当时心情，随性决定', pole: 'P' }
+      ] },
+      { dim: 'JP', text: '你更接受哪种工作节奏？', options: [
+        { text: '留有缓冲，随时调整', pole: 'P' },
+        { text: '提前排好，按部就班', pole: 'J' }
+      ] },
+      { dim: 'JP', text: '出门前，你通常会：', options: [
+        { text: '提前确认物品和路线', pole: 'J' },
+        { text: '差不多就出发，缺什么再买', pole: 'P' }
+      ] },
+      { dim: 'JP', text: '面对一个长期目标，你更常：', options: [
+        { text: '边走边调整方向', pole: 'P' },
+        { text: '拆成阶段计划并设截止时间', pole: 'J' }
+      ] }
+    ];
+
+    /* ---------- 16 型人格简介 ---------- */
+    var PERSONALITY_TYPES = {
+      INTJ: { name: '建筑师', tagline: '战略型 · 独立思考', desc: '擅长独立思考与长期规划，重视逻辑和效率，常能看穿事情的结构，但有时显得冷静疏离。' },
+      INTP: { name: '逻辑学家', tagline: '分析型 · 好奇探索', desc: '好奇心强，喜欢追问原理和可能性，享受分析问题本身，行动落地和情绪表达相对少。' },
+      ENTJ: { name: '指挥官', tagline: '指挥型 · 目标驱动', desc: '目标感强，善于组织资源和推动他人，决策果断，追求效率和结果，但需留意他人的感受。' },
+      ENTP: { name: '辩论家', tagline: '创新型 · 灵活辩论', desc: '点子多、反应快，喜欢挑战常规和讨论新可能，适应变化，但容易对重复执行失去耐心。' },
+      INFJ: { name: '提倡者', tagline: '理想型 · 洞察人心', desc: '敏感而有原则，擅长理解他人动机，重视意义与深度关系，倾向理想主义，但容易内耗。' },
+      INFP: { name: '调停者', tagline: '理想型 · 价值驱动', desc: '内心丰富，重视价值观与真诚表达，富有同理心和想象力，但面对冲突时容易退让。' },
+      ENFJ: { name: '主人公', tagline: '引导型 · 关系导向', desc: '善于感染和带动他人，重视关系与共同目标，乐于支持别人成长，但可能过度承担。' },
+      ENFP: { name: '竞选者', tagline: '感染型 · 热情探索', desc: '热情、开放、富有想象力，喜欢探索新关系和新可能，感染力强，但专注与收尾需加强。' },
+      ISTJ: { name: '物流师', tagline: '执行型 · 稳定可靠', desc: '可靠、守规则、重视事实与秩序，擅长把计划稳定落实，喜欢明确标准，但不太喜欢频繁变动。' },
+      ISFJ: { name: '守卫者', tagline: '守护型 · 细致体贴', desc: '细心、体贴、责任感强，擅长照顾具体需要和维护稳定关系，低调付出，但容易忽略自己。' },
+      ESTJ: { name: '总经理', tagline: '管理型 · 务实高效', desc: '务实、果断、组织力强，重视规则与效率，善于安排事务和推动执行，但表达可能偏直接。' },
+      ESFJ: { name: '执政官', tagline: '协调型 · 群体关怀', desc: '热心、重视群体氛围，善于照顾他人和协调关系，乐于参与集体事务，但容易在意评价。' },
+      ISTP: { name: '鉴赏家', tagline: '实干型 · 冷静应变', desc: '冷静、动手能力强，喜欢在实际操作和问题解决中学习，重视自由与效率，情绪表达较少。' },
+      ISFP: { name: '探险家', tagline: '体验型 · 温和自由', desc: '温和、敏感、重视当下的体验与个人价值，审美和共情力好，喜欢自由空间，不喜欢被强推。' },
+      ESTP: { name: '企业家', tagline: '行动型 · 冒险即兴', desc: '行动力强、反应快，喜欢即时挑战和真实体验，善于抓住机会，冒险精神足，但耐心规划较少。' },
+      ESFP: { name: '表演者', tagline: '表现型 · 活力当下', desc: '外向、热情、享受当下，善于活跃气氛和连接他人，喜欢新鲜感，但长期计划需加强。' }
+    };
+
+    var DIMENSIONS = { EI: ['E', 'I'], SN: ['S', 'N'], TF: ['T', 'F'], JP: ['J', 'P'] };
+    var TOTAL = QUESTION_BANK.length;
+    var PER_DIMENSION = TOTAL / 4;
+
+    var pages = Array.prototype.slice.call(document.querySelectorAll('[data-page]'));
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-preview]'));
+    var menuBtn = document.getElementById('menuBtn');
+    var scrim = document.getElementById('scrim');
+    var drawer = document.getElementById('drawer');
+
+    function setDrawer(open) {
+      drawer.classList.toggle('is-open', open);
+      scrim.classList.toggle('is-open', open);
+      drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+      menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    var els = {
+      progressText: document.getElementById('progressText'),
+      progressFill: document.getElementById('progressFill'),
+      questionIndex: document.getElementById('questionIndex'),
+      questionText: document.getElementById('questionText'),
+      optionA: document.getElementById('optionA'),
+      optionB: document.getElementById('optionB'),
+      optionAText: document.getElementById('optionAText'),
+      optionBText: document.getElementById('optionBText'),
+      prevBtn: document.getElementById('prevBtn'),
+      nextBtn: document.getElementById('nextBtn'),
+      nextLabel: document.getElementById('nextLabel'),
+      typeBadge: document.getElementById('typeBadge'),
+      typeName: document.getElementById('typeName'),
+      typeTagline: document.getElementById('typeTagline'),
+      resultDesc: document.getElementById('resultDesc'),
+      recentSub: document.getElementById('recentSub'),
+      detailBody: document.querySelector('#page-detail .body'),
+      saveBtn: document.getElementById('saveBtn')
+    };
+
+    var STORAGE_KEY = 'mbti_last_record_v1';
+    var currentIndex = 0;
+    var answers = [];
+    var counts = null;
+    var countsPerDimension = 0;
+    var currentType = null;
+    var savedRecord = null;
+
+    function showPage(name) {
+      pages.forEach(function (page) {
+        page.classList.toggle('is-active', page.dataset.page === name);
+      });
+      tabs.forEach(function (tab) {
+        tab.classList.toggle('is-active', tab.dataset.preview === name);
+      });
+      var active = document.querySelector('[data-page="' + name + '"] .body');
+      if (active) active.scrollTop = 0;
+    }
+
+    function renderQuestion() {
+      var q = QUESTION_BANK[currentIndex];
+
+      els.progressText.textContent = '第 ' + (currentIndex + 1) + ' / ' + TOTAL + ' 题';
+      els.progressFill.style.width = (((currentIndex + 1) / TOTAL) * 100) + '%';
+      els.questionIndex.textContent = 'QUESTION ' + String(currentIndex + 1).padStart(2, '0');
+      els.questionText.textContent = q.text;
+      els.optionAText.textContent = q.options[0].text;
+      els.optionBText.textContent = q.options[1].text;
+
+      [els.optionA, els.optionB].forEach(function (btn, i) {
+        var selected = answers[currentIndex] === i;
+        btn.classList.toggle('is-selected', selected);
+        btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      });
+
+      var isLast = currentIndex === TOTAL - 1;
+      els.nextLabel.textContent = isLast ? '查看结果' : '下一题';
+      els.nextBtn.disabled = answers[currentIndex] === null;
+      els.prevBtn.disabled = currentIndex === 0;
+
+      if (els.detailBody) els.detailBody.scrollTop = 0;
+    }
+
+    function renderDimensionBars() {
+      Object.keys(DIMENSIONS).forEach(function (key) {
+        var bar = document.querySelector('[data-bar="' + key + '"]');
+        if (!bar) return;
+        var leftCount = counts ? counts[DIMENSIONS[key][0]] : 0;
+        bar.style.width = (counts ? (leftCount / (countsPerDimension || PER_DIMENSION)) * 100 : 50) + '%';
+      });
+    }
+
+    function renderResult() {
+      var info = currentType ? PERSONALITY_TYPES[currentType] : null;
+
+      els.typeBadge.textContent = currentType || '----';
+      els.typeName.textContent = info ? info.name : '尚未生成结果';
+      els.typeTagline.textContent = info ? info.tagline : '完成 40 道题后显示四字母类型与中文名称';
+      els.resultDesc.textContent = info
+        ? info.desc
+        : '完成 40 道题后，这里会显示类型概述、优势与需要注意的倾向。当前还没有答题记录。';
+      els.saveBtn.disabled = !currentType;
+      renderDimensionBars();
+    }
+
+    function resetTest() {
+      answers = QUESTION_BANK.map(function () { return null; });
+      currentIndex = 0;
+      counts = null;
+      countsPerDimension = PER_DIMENSION;
+      currentType = null;
+      renderResult();
+      renderQuestion();
+    }
+
+    function formatSavedAt(value) {
+      if (!value) return '';
+      var date = new Date(value);
+      if (isNaN(date.getTime())) return '';
+      var mm = ('0' + (date.getMonth() + 1)).slice(-2);
+      var dd = ('0' + date.getDate()).slice(-2);
+      var hh = ('0' + date.getHours()).slice(-2);
+      var mi = ('0' + date.getMinutes()).slice(-2);
+      return mm + '-' + dd + ' ' + hh + ':' + mi;
+    }
+
+    function loadSavedRecord() {
+      var raw = null;
+      try {
+        raw = window.localStorage.getItem(STORAGE_KEY);
+      } catch (e) {
+        raw = null;
+      }
+      if (!raw) return null;
+      try {
+        var record = JSON.parse(raw);
+        if (record && record.type && PERSONALITY_TYPES[record.type]) return record;
+      } catch (e) {}
+      return null;
+    }
+
+    function renderRecentRecord() {
+      var info = savedRecord ? PERSONALITY_TYPES[savedRecord.type] : null;
+      if (!info) {
+        els.recentSub.textContent = '完成 40 道题后可在这里查看结果';
+        return;
+      }
+      var when = formatSavedAt(savedRecord.savedAt);
+      els.recentSub.textContent = '已保存：' + savedRecord.type + ' · ' + info.name + (when ? ' · ' + when : '');
+    }
+
+    function restoreSavedRecord() {
+      savedRecord = loadSavedRecord();
+      if (savedRecord) {
+        currentType = savedRecord.type;
+        counts = savedRecord.counts || null;
+        countsPerDimension = savedRecord.total ? savedRecord.total / 4 : 5;
+        renderResult();
+      }
+      renderRecentRecord();
+    }
+
+    function saveCurrentRecord() {
+      if (!currentType) return;
+
+      var record = {
+        type: currentType,
+        counts: counts,
+        total: TOTAL,
+        answers: answers.slice(),
+        savedAt: new Date().toISOString()
+      };
+      savedRecord = record;
+
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+      } catch (e) {}
+
+      renderRecentRecord();
+      showPage('home');
+    }
+
+    function openSavedRecord() {
+      if (savedRecord && PERSONALITY_TYPES[savedRecord.type]) {
+        currentType = savedRecord.type;
+        counts = savedRecord.counts || null;
+        countsPerDimension = savedRecord.total ? savedRecord.total / 4 : 5;
+        renderResult();
+      }
+      showPage('profile');
+    }
+
+    function startTest() {
+      resetTest();
+      showPage('detail');
+    }
+
+    function chooseOption(optionIndex) {
+      answers[currentIndex] = optionIndex;
+      renderQuestion();
+    }
+
+    function calculateResult() {
+      counts = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+      countsPerDimension = PER_DIMENSION;
+      QUESTION_BANK.forEach(function (q, i) {
+        var answer = answers[i];
+        if (answer === null) return;
+        counts[q.options[answer].pole] += 1;
+      });
+
+      currentType = [
+        counts.E >= counts.I ? 'E' : 'I',
+        counts.S >= counts.N ? 'S' : 'N',
+        counts.T >= counts.F ? 'T' : 'F',
+        counts.J >= counts.P ? 'J' : 'P'
+      ].join('');
+
+      renderResult();
+    }
+
+    function goPrev() {
+      if (currentIndex === 0) return;
+      currentIndex -= 1;
+      renderQuestion();
+    }
+
+    function goNext() {
+      if (answers[currentIndex] === null) return;
+
+      if (currentIndex < TOTAL - 1) {
+        currentIndex += 1;
+        renderQuestion();
+        return;
+      }
+
+      calculateResult();
+      showPage('profile');
+    }
+
+    document.addEventListener('click', function (event) {
+      var start = event.target.closest('[data-action="start"]');
+      if (start) {
+        startTest();
+        return;
+      }
+
+      var openRecord = event.target.closest('[data-action="open-record"]');
+      if (openRecord) {
+        openSavedRecord();
+        return;
+      }
+
+      var save = event.target.closest('[data-action="save"]');
+      if (save) {
+        saveCurrentRecord();
+        return;
+      }
+
+      var prev = event.target.closest('[data-action="prev"]');
+      if (prev) {
+        goPrev();
+        return;
+      }
+
+      var next = event.target.closest('[data-action="next"]');
+      if (next) {
+        goNext();
+        return;
+      }
+
+      var choice = event.target.closest('[data-choice]');
+      if (choice) {
+        chooseOption(Number(choice.dataset.choice));
+        return;
+      }
+
+      var preview = event.target.closest('[data-preview]');
+      if (preview) {
+        showPage(preview.dataset.preview);
+        setDrawer(false);
+        return;
+      }
+
+      var nav = event.target.closest('[data-go]');
+      if (nav) {
+        showPage(nav.dataset.go);
+      }
+    });
+
+    menuBtn.addEventListener('click', function () {
+      setDrawer(!drawer.classList.contains('is-open'));
+    });
+
+    scrim.addEventListener('click', function () {
+      setDrawer(false);
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') setDrawer(false);
+    });
+
+    resetTest();
+    restoreSavedRecord();
+  })();
+</script>
+
+</body>
+</html>

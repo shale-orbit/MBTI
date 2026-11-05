@@ -90,6 +90,18 @@
 
   <script>
     (function () {
+      // 清理旧版本遗留的 Service Worker 缓存（曾短期开启过 PWA）
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (rs) {
+          rs.forEach(function (r) { r.unregister(); });
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then(function (ks) {
+          ks.forEach(function (k) { caches.delete(k); });
+        });
+      }
+
       // Flutter 引擎启动后会向 body 插入 flutter-view / flt-glass-pane 元素
       var removed = false;
       function hideLoading() {
@@ -101,17 +113,29 @@
         }
       }
       var timer = setInterval(hideLoading, 300);
-      // 60 秒仍未启动则提示换浏览器
+      // 90 秒仍未启动则提示换浏览器
       setTimeout(function () {
         clearInterval(timer);
         if (!removed) {
           var err = document.getElementById('mbti-error');
           if (err) err.style.display = 'block';
         }
-      }, 60000);
+      }, 90000);
     })();
   </script>
 
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- 大体积资源走 jsdelivr CDN（github.io 国内访问慢），页面本身仍由 GitHub Pages 提供 -->
+  <script src="https://testingcf.jsdelivr.net/gh/shale-orbit/MBTI@gh-pages/flutter.js"></script>
+  <script>
+    _flutter.buildConfig = {"engineRevision":"06a2e2a110089dff50fe635cffd2a61e1b24fbcd","builds":[{"compileTarget":"dart2js","renderer":"canvaskit","mainJsPath":"main.dart.js"}]};
+    window.addEventListener('load', function () {
+      _flutter.loader.load({
+        config: {
+          entrypointBaseUrl: 'https://testingcf.jsdelivr.net/gh/shale-orbit/MBTI@gh-pages/',
+          canvasKitBaseUrl: 'https://testingcf.jsdelivr.net/gh/shale-orbit/MBTI@gh-pages/canvaskit'
+        }
+      });
+    });
+  </script>
 </body>
 </html>

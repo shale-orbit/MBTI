@@ -1,0 +1,7 @@
+﻿build/
+.screenshots/
+*.zip
+.dart_tool/
+.idea/
+.flutter-plugins-dependencies
+.metadata
